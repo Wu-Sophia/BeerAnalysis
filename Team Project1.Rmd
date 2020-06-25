@@ -1,0 +1,126 @@
+---
+title: "DDS Group Project"
+author: "Chad Reo"
+date: "6/24/2020"
+output: html_document
+---
+```{r}
+#Load Libraries and Data 
+library(dplyr)
+library(grid)
+library(ggplot2)
+library(tidyr)
+library(maps)
+library(usmap)
+library(stringr)
+library(class)
+library(caret)
+library(Hmisc)
+library(gridExtra)
+library(naniar)
+```
+
+##1. Number of Breweries Per State
+#merged Data first
+```{r}
+breweries <- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Breweries.csv")
+beer<- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Beers.csv")
+
+```
+#2. Merge Beer Data with Brewery  Data
+```{r}
+beerBrew=merge(beer,breweries,by.x="Brewery_id",by.y="Brew_ID")
+#add in map data
+stateCoords=us_map()
+
+# Remove Leading Spaces from State Column of merged Beer Brew Data frame (prepare for join)
+# Summarise Each State's Number of Breweries and Beers
+stateBrewBeer= beerBrew %>% mutate(State=gsub(" ","",State)) %>% group_by(State) %>% summarise(brews=length(unique(Brewery_id)),beers=n())
+
+#Join Brewery Beer Data with a dataframe containing state coordinates and population
+statePopBrBe = merge(statepop,stateBrewBeer,all.x=TRUE,by.y="State",by.x="abbr")
+statePopBrBe=statePopBrBe %>% mutate(brewCap=brews/pop_2015,beerCap=beers/pop_2015)
+```
+
+```{r}
+#put in map
+plot_usmap(data=statePopBrBe,values="brews",labels = TRUE)+scale_fill_continuous(name="Number Breweries")
+
+```
+#3. Address the missing values in each column.
+```{r}
+# plot missing values in each column, rename some columns
+gg_miss_var(beerBrew%>%rename(Beer_Name=Name.x,Brewery_Name=Name.y,Brewery_ID=Brewery_id)
+            %>%select(IBU,ABV,Style,State,Ounces,City,Brewery_Name,Beer_Name,
+                      Brewery_ID,Beer_ID))
+
+# convert empty string Styles to NAs to more easily see missings in all columns
+beerBrew$Style[which(beerBrew$Style=="")]=NA
+sapply(beerBrew, function(x) sum(is.na(x)))
+
+```
+#4.Compute the median alcohol content and international bitterness unit for each state. 
+#Plot a bar chart to compare.
+```{r}
+beerBrew %>% group_by(State) %>%
+  filter(!is.na(ABV))%>%
+  summarise(ABV=median(ABV)) %>%
+  ggplot(aes(x=reorder(State,-ABV),ABV)) +
+  geom_bar(stat="identity", position="dodge", color='skyblue',fill='steelblue') + 
+  # scale_y_continuous(limits = c(0.5,0.07))+
+  coord_flip()+ 
+  xlab("State") +  ylab("ABV") + ggtitle("Median ABV by State") 
+
+
+beerBrew %>% group_by(State) %>%
+  filter(!is.na(IBU))%>%
+  summarise(IBU=median(IBU)) %>%
+  ggplot(aes(x=reorder(State,-IBU),IBU)) +
+  geom_bar(stat="identity", position="dodge", color='skyblue',fill='steelblue') + 
+  coord_flip()+ 
+  xlab("State") +  ylab("IBU") + ggtitle("Median IBU by State")
+```
+#5. (part 1) Which state has the maximum alcoholic (ABV) beer? 
+#Which state has the most bitter (IBU) beer?
+```{r}
+#find the single most ABV beer
+beerBrew %>% filter(!is.na(ABV)) %>% mutate(maxABV=max(ABV)) %>%
+  filter(ABV==maxABV) %>%select(State,Name.x,Name.y,ABV)
+
+#find the single most bitter beer
+beerBrew %>% filter(!is.na(IBU)) %>% mutate(maxIBU=max(IBU)) %>%
+  filter(IBU==maxIBU)%>%select(State,Name.x,Name.y,IBU)
+
+```
+#6.Comment on the summary statistics and distribution of the ABV variable
+#The ABV is mostly normally distributed with a noticeable right tail.  
+#The mean is Larger than the median.
+```{r}
+#Check for normality of ABV using qq plot and histogram
+beerBrew %>% filter(!is.na(ABV)) %>% ggplot() +stat_qq(aes(sample=ABV)) 
+beerBrew %>% filter(!is.na(ABV)) %>% ggplot()+geom_histogram(aes(ABV))
+beerBrew %>% filter(!is.na(ABV)) %>% select(ABV)%>%summary()
+```
+#7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+#There is a moderate positive correlation between ABV and IBU.  
+#The upward slope is evidence of a positive relationship.  The points' moderate to small deviations from the trendline is evidence of a moderate to weak relationship.
+```{r}
+beerBrew %>% filter(!is.na(ABV)&!is.na(IBU))%>%
+  ggplot(aes(ABV,IBU,color=StyleCat))+geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +labs(title="Correlation between ABV and IBU") 
+
+
+```
+#8.1 Group beer styles into larger style buckets
+#Categorize the many styles into 5 groups
+```{r}
+beerBrew$StyleCat= case_when(
+  grepl("(India Pale Ale|IPA)",beerBrew$Style) ~ "IPA",
+  grepl( "Ale",beerBrew$Style) ~ "Ale",
+  grepl("Lager",beerBrew$Style)~"Lager",
+  grepl("Stout",beerBrew$Style)~"Stout",
+  TRUE~"Other"
+)
+
+```
+
