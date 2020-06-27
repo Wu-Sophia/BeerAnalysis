@@ -37,9 +37,6 @@ stateCoords=us_map()
 # Summarise Each State's Number of Breweries and Beers
 stateBrewBeer= beerBrew %>% mutate(State=gsub(" ","",State)) %>% group_by(State) %>% summarise(brews=length(unique(Brewery_id)),beers=n())
 
-#Join Brewery Beer Data with a dataframe containing state coordinates and population
-statePopBrBe = merge(statepop,stateBrewBeer,all.x=TRUE,by.y="State",by.x="abbr")
-statePopBrBe=statePopBrBe %>% mutate(brewCap=brews/pop_2015,beerCap=beers/pop_2015)
 ```
 
 ```{r}
