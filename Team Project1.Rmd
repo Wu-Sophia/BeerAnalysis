@@ -44,7 +44,12 @@ statePopBrBe=statePopBrBe %>% mutate(brewCap=brews/pop_2015,beerCap=beers/pop_20
 
 ```{r}
 #put in map
-plot_usmap(data=statePopBrBe,values="brews",labels = TRUE)+scale_fill_continuous(name="Number Breweries")
+plot_usmap(data=stateBrewBeer,values="brews",labels = TRUE, offset=0.5, color = "red")  +
+  scale_fill_continuous(low = "white", high = "red", name="Number Breweries")+ 
+  theme(legend.position = "right") +
+  labs(title = "Brewery Count",
+       subtitle = "Darker Areas have the Most Breweries") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
 
 ```
 #3. Address the missing values in each column.
