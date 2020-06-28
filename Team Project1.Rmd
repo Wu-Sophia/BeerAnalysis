@@ -133,4 +133,125 @@ beerBrew$StyleCat= case_when(
 )
 
 ```
+#9 Knock their socks off!  Find one other useful inference from 
+#the data that you feel Budweiser may be able to find value in.
 
+```{r}
+###Get population
+library(tidyr)
+library(plyr)
+library(jsonlite)
+library(dplyr)
+library(tidyverse)
+
+#go get Key from USCensus
+US_Census_KEY = "3094ca397d1d50a4e3a230346dbaf7d801f753d4" #Your Key Here â¦ get from US Census website
+
+#Pull Json data
+Json <- "https://api.census.gov/data/2018/acs/acs1?get=NAME,B01001_001E&for=state:*"
+
+
+#put in Dataframe
+get_json <- jsonlite::fromJSON(Json, flatten = TRUE)
+str(get_json)
+Pop_df <- as.data.frame(get_json)
+str(Pop_df)
+colnames(Pop_df)
+head(Pop_df)
+
+#clean up by renaming columns and dropping unneeded columns/rows
+names(Pop_df)[1] <- "State"
+names(Pop_df)[2] <- "Population"
+head(Pop_df)
+
+#clean up by dropping unneeded columns/rows
+Pop_df <- select(Pop_df, -3)
+Pop_df <- Pop_df[-c(1),]
+
+#change factor to numeric
+Pop_df$Population <- as.numeric(as.character(Pop_df$Population))
+
+view(Pop_df)
+head(Pop_df)
+summary(Pop_df)
+
+#take a look at data
+Pop_df[order(Pop_df$Population),]
+
+#graph Population
+library(scales)
+Pop_df  %>% 
+  ggplot(aes(x = reorder(State, -Population), y = Population)) +
+  geom_bar(stat = "identity", fill = "blue") + 
+  #theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  labs(title = "US Population by State",
+       subtitle = "Source:  US Census Estimate for 2018") + 
+  xlab("State") + coord_flip() +
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+#pull out abbr from Coordinates map
+StateNames <- stateCoords %>% select(abbr, full) %>% distinct(abbr, full)
+
+#get style count by State
+StyleCnt <- beerBrew %>% mutate(State=gsub(" ","",State)) %>%
+  select(Style, State) %>% 
+  filter(!is.na(Style)) %>% group_by(Style, State) %>% tally()
+
+#add Abbr to State Names
+StatePop = merge(StateNames,Pop_df,by.x="full",by.y="State")
+
+#Merge Population and Beer Data
+Revenue_DF = merge(StatePop,stateBrewBeer,by.x="abbr",by.y="state")
+str(Revenue_DF)
+Revenue_DF[order(Revenue_DF$beers/log(Revenue_DF$Population)),]
+
+#check normality of Beer/Pop data
+library("ggpubr")
+ggqqplot(Revenue_DF$beersPerLogPop, ylab = "beersPerLogPop",
+         ggtheme = theme_minimal())
+
+#histogram
+ggplot()+geom_histogram(aes(Revenue_DF$beers/log(Revenue_DF$Population)))
+
+#add metrics
+Revenue_DF = Revenue_DF %>% mutate(LogPop = log(Population),
+                                  brewsPerLogPop = brews/log(Population),
+                                  beersPerLogPop = beers/log(Population))
+
+
+#Look at data points with high residual error
+Revenue_DF %>% filter(beersPerLogPop < 7.5) %>% 
+  ggplot(aes(LogPop,beersPerLogPop)) +
+  geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +
+  labs(title="Correlation between Population and Count of Beers") 
+
+#Look at data points with high residual error
+Revenue_DF %>% filter(brewsPerLogPop < 2) %>% 
+  ggplot(aes(LogPop,brewsPerLogPop)) +
+  geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +
+  labs(title="Correlation between Population and Count of Breweries") 
+
+#get low values as areas to focus
+Revenue_DF %>% filter(beersPerLogPop <= 1.5,
+                      LogPop > 15.5)
+Revenue_DF %>% filter(brewsPerLogPop <= .5,
+                      LogPop > 15.5)
+
+
+Revenue_DF_Compare_North <- beerBrew %>% 
+  filter(State == "MD" | State == "NJ") %>% 
+  select (StyleCat) %>%
+  group_by(StyleCat) %>% 
+  tally()
+Revenue_DF_Compare_North
+
+Revenue_DF_Compare_South <- beerBrew %>% 
+  filter(State == "GA" | State == "TN") %>% 
+  select (StyleCat) %>%
+  group_by(StyleCat) %>% 
+  tally()
+Revenue_DF_Compare_South
+```
