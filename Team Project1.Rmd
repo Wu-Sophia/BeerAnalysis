@@ -30,18 +30,26 @@ beer<- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Beers.cs
 #2. Merge Beer Data with Brewery  Data
 ```{r}
 beerBrew=merge(beer,breweries,by.x="Brewery_id",by.y="Brew_ID")
+beerBrew$Brewery_id = as.factor(beerBrew$Brewery_id)
+beerBrew$Beer_ID = as.factor(beerBrew$Beer_ID)
+
 #add in map data
 stateCoords=us_map()
-
 # Remove Leading Spaces from State Column of merged Beer Brew Data frame (prepare for join)
+beerBrew$State = gsub(" ","",beerBrew$State)
+str(beerBrew)
+
 # Summarise Each State's Number of Breweries and Beers
-stateBrewBeer= beerBrew %>% mutate(State=gsub(" ","",State)) %>% group_by(State) %>% summarise(brews=length(unique(Brewery_id)),beers=n())
+stateBrewBeer1 = beerBrew %>% 
+  select(State, Brewery_id) %>% 
+  group_by(State, Brewery_id) 
+stateBrewBeer2 = stateBrewBeer1 %>% distinct(State, Brewery_id) 
+stateBrewBeer3 = stateBrewBeer2 %>%  group_by(State) %>% tally()
+stateBrewBeer3$state = stateBrewBeer3$State 
 
-```
 
-```{r}
-#put in map
-plot_usmap(data=stateBrewBeer,values="brews",labels = TRUE, offset=0.5, color = "red")  +
+#plot map
+plot_usmap(data=stateBrewBeer3,values="n",labels = TRUE, offset=0.5, color = "red")  +
   scale_fill_continuous(low = "white", high = "red", name="Number Breweries")+ 
   theme(legend.position = "right") +
   labs(title = "Brewery Count",
