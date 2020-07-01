@@ -113,7 +113,7 @@ beerBrew %>% filter(!is.na(ABV)) %>% select(ABV)%>%summary()
 ```
 #7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 #There is a moderate positive correlation between ABV and IBU.  
-#The upward slope is evidence of a positive relationship.  The points' moderate to small deviations from the trendline is evidence of a moderate to weak relationship.
+#The upward slope is evidence of a positive relationship.  The points' moderate to small deviations from the trendline is clear evidence of a moderate to weak relationship.
 ```{r}
 beerBrew %>% filter(!is.na(ABV)&!is.na(IBU))%>%
   ggplot(aes(ABV,IBU,color=StyleCat))+geom_point(position=position_jitter(width=0.01),alpha=0.5)+
