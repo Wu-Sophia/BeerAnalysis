@@ -12,6 +12,7 @@ output: html_document
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(dplyr)
 breweries <- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Breweries.csv")
 beers<- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Beers.csv")
 ```
@@ -157,13 +158,6 @@ ipa_ale_count <- dim(beercombined_ale)[1]
 head(beercombined_ale)
 
 ```
-
-  Column Name      |Count                 |% of Total
-  -----------------|--------------------- |------------------------------------------------
-  1.  IPA          |    `r ipa_count`	    | `r ipa_count / total_beers_count * 100`
-  2.  Other Ales   |    `r ale_count`	    | `r ale_count / total_beers_count * 100`
-  3.  Ales + IPAs  |    `r ipa_ale_count` | `r ipa_ale_count / total_beers_count * 100`
-  
   
 ```{r Boxplot of ABU between IPA and other Ale}
 
@@ -275,6 +269,8 @@ library("readxl")
 library(tidyverse)
 library(corrplot)
 library(RColorBrewer)
+library(ggplot2)
+library(GGally)
 
 #check multicorrelation with IBU,ABV,Income,population, ounce
 
