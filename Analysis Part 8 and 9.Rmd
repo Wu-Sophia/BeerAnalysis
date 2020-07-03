@@ -269,7 +269,25 @@ plot(seq(1,numks,1),MeanAcc, type = "l")
 which.max(MeanAcc)
 max(MeanAcc)
 
+```
+```{r  check correlation within IBU,ABV,Income, population,Ounce}
+library("readxl")
+library(tidyverse)
+library(corrplot)
+library(RColorBrewer)
 
+#check multicorrelation with IBU,ABV,Income,population, ounce
+
+#Replace missing value with mean value
+beermerged1<- beermerged
+beermerged1$beerABV[which(is.na(beermerged1$beerABV))] <- mean(beermerged1$beerABV,na.rm=TRUE)
+beermerged1$beerIBU[which(is.na(beermerged1$beerIBU))] <- mean(beermerged1$beerIBU,na.rm=TRUE)
+View(beermerged1)
+
+
+filterbeermerged <-beermerged1 %>% select(beerIBU,beerABV, beerOunce,Income, Population) 
+
+ggpairs(filterbeermerged, title="correlogram with ggpairs()") 
+corrplot(cor(filterbeermerged), type="upper", order="original")
 
 ```
-
