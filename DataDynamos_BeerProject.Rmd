@@ -1,6 +1,6 @@
 ---
 title: "DDS Group Project"
-author: "Chad Reo & Sophia Wu"
+author: "Chad Reo & Sophia Wu & Clifford Otun"
 date: "7/4/2020"
 output: html_document
 ---
@@ -27,8 +27,8 @@ library(usmap)
 
 ##1. Number of Breweries Per State
 #merged Data first
-## The number of breweries pr state ranges between 1 and 40 with an exceptional case of 47 in Colordo.
-## As seen from the map, the number increases with increase in the darckness of the color associated with each state.
+## The number of breweries pr state ranges between 1 and 40 with an exceptional case of 47 in Colordo.  
+## As seen from the map, the number increases with increase in the darckness of the color associated with each state.  
 ```{r}
 #breweries <- read.csv("Breweries.csv")
 #beer<- read.csv("Beers.csv")
@@ -37,8 +37,8 @@ beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sc
 40
 ```
 #2. Merge Beer Data with Brewery  Data
-##  The data was obtained in two parts, the beer data and the brewery data. Both files were merged to obtain a common
-##  data for which analysis was carried out to address the needs of Budweiser.
+##  The data was obtained in two parts, the beer data and the brewery data. Both files were merged to obtain a common  
+##  data for which analysis was carried out to address the needs of Budweiser.  
 ```{r}
 beerBrew=merge(beers,breweries,by.x="Brewery_id",by.y="Brew_ID")
 beerBrew$Brewery_id = as.factor(beerBrew$Brewery_id)
@@ -89,7 +89,9 @@ plot_usmap(data=map_view_df,values="Count",labels = TRUE, offset=0.5, color = "r
   theme(panel.background = element_rect(color = "black", fill = "lightblue"))
 
 ```
-#3. Address the missing values in each column.
+#3. Address the missing values in each column.  
+## Due to the amount of data obtained, a percentage was selected for the analysis.  
+## The data also as missing information probably as a result of a lack in variety.  
 ```{r}
 #3. Address the missing values in each column.
 # plot missing values in each column, rename some columns
@@ -135,6 +137,8 @@ beerBrew %>% filter(!is.na(IBU)) %>%
 ```
 #5. (part 1) Which state has the maximum alcoholic (ABV) beer? 
 #Which state has the most bitter (IBU) beer?
+## The state with the maximum ABV was found to be Colorado  
+## and that with the maximum IBU was found to be Oregon  
 ```{r}
 #find the single most ABV beer
 beerBrew %>% filter(!is.na(ABV)) %>% mutate(maxABV=max(ABV)) %>%
