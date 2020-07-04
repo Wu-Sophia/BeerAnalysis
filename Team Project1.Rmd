@@ -79,7 +79,8 @@ beerBrew %>% group_by(State) %>%
   geom_bar(stat="identity", position="dodge", color='skyblue',fill='steelblue') + 
   # scale_y_continuous(limits = c(0.5,0.07))+
   coord_flip()+ 
-  xlab("State") +  ylab("ABV") + ggtitle("Median ABV by State") 
+  xlab("State") +  ylab("ABV") + ggtitle("Median ABV by State")+ 
+  theme(text = element_text(size=20,color= 'green'))
 
 
 beerBrew %>% group_by(State) %>%
@@ -88,7 +89,8 @@ beerBrew %>% group_by(State) %>%
   ggplot(aes(x=reorder(State,-IBU),IBU)) +
   geom_bar(stat="identity", position="dodge", color='skyblue',fill='steelblue') + 
   coord_flip()+ 
-  xlab("State") +  ylab("IBU") + ggtitle("Median IBU by State")
+  xlab("State") +  ylab("IBU") + ggtitle("Median IBU by State")+
+  theme(text = element_text(size=20,color= 'green'))
 ```
 #5. (part 1) Which state has the maximum alcoholic (ABV) beer? 
 #Which state has the most bitter (IBU) beer?
