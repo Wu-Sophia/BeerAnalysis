@@ -1,0 +1,713 @@
+---
+title: "DDS Group Project"
+author: "Chad Reo & Sophia Wu"
+date: "7/4/2020"
+output: html_document
+---
+```{r}
+#Load Libraries and Data 
+library(caret)
+library(class)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(Hmisc)
+library(jsonlite)
+library(kableExtra)
+library(knitr)
+library(maps)
+library(naniar)
+library(stringr)
+library(tidyr)
+library(tidyverse)
+library(usmap)
+
+```
+
+##1. Number of Breweries Per State
+#merged Data first
+```{r}
+#breweries <- read.csv("Breweries.csv")
+#beer<- read.csv("Beers.csv")
+breweries = read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Breweries.csv")
+beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Beers.csv")
+
+```
+#2. Merge Beer Data with Brewery  Data
+```{r}
+beerBrew=merge(beers,breweries,by.x="Brewery_id",by.y="Brew_ID")
+beerBrew$Brewery_id = as.factor(beerBrew$Brewery_id)
+beerBrew$Beer_ID = as.factor(beerBrew$Beer_ID)
+
+#add in map data
+#add in map data
+stateCoords=us_map()
+# Remove Leading Spaces from State Column of merged Beer Brew Data frame (prepare for join)
+beerBrew$State = gsub(" ","",beerBrew$State)
+#str(beerBrew)
+
+# Summarise Each State's Number of Breweries and Beers
+stateBrewBeer1 = beerBrew %>% 
+  select(State, Brewery_id) %>% 
+  group_by(State, Brewery_id) 
+stateBrewBeer2 = stateBrewBeer1 %>% distinct(State, Brewery_id) 
+stateBrewBeer3 = stateBrewBeer2 %>%  group_by(State) %>% tally()
+stateBrewBeer3$state = stateBrewBeer3$State 
+str(stateBrewBeer3)
+
+stateBrewBeer4 = beerBrew %>% 
+  select(State, Beer_ID) %>% 
+  group_by(State, Beer_ID) 
+stateBrewBeer5 = stateBrewBeer4 %>% distinct(State, Beer_ID) 
+stateBrewBeer6 = stateBrewBeer5 %>%  group_by(State) %>% tally()
+
+StatebeerBrew=merge(stateBrewBeer6,stateBrewBeer3,by.x="State",by.y="State")
+
+#rename counts
+colnames(StatebeerBrew)[2] <-"Beers"
+colnames(StatebeerBrew)[3] <-"Breweries"
+
+#put in DataFrame for table
+#on ppt
+map_view_df = StatebeerBrew[order(StatebeerBrew$Breweries),] %>% select(state, Count = Breweries) 
+view(head(map_view_df,26))  
+view(tail(map_view_df,25)) 
+
+
+#put in nice little map
+#on ppt
+plot_usmap(data=map_view_df,values="Count",labels = TRUE, offset=0.5, color = "red")  +
+  scale_fill_continuous(low = "white", high = "red", name="Number Breweries")+ 
+  theme(legend.position = "right") +
+  labs(title = "Brewery Count",
+       subtitle = "Darker Areas have the Most Breweries") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+```
+#3. Address the missing values in each column.
+```{r}
+#3. Address the missing values in each column.
+# plot missing values in each column, rename some columns
+#on ppt
+gg_miss_var(beerBrew)
+gg_miss_var(beerBrew %>% select(IBU,ABV, State), State)
+gg_miss_var(beerBrew %>% select(IBU,ABV, State), State, show_pct = TRUE)
+
+ggplot(beerBrew,
+       aes(x = IBU,
+           y = ABV)) +
+  geom_miss_point() + labs(title = "Plot of Values") + theme_light()
+
+# convert empty string Styles to NAs to more easily see missings in all columns
+beerBrew$Style[which(beerBrew$Style=="")]=NA
+view(sapply(beerBrew, function(x) sum(is.na(x))))
+
+```
+#4.Compute the median alcohol content and international bitterness unit for each state. 
+#Plot a bar chart to compare.
+```{r}
+beerBrew %>% filter(!is.na(ABV)) %>%
+ group_by(State) %>%
+  summarise(ABV=median(ABV)) %>%
+  ggplot(aes(x=reorder(State,-ABV),ABV)) +
+  geom_bar(stat="identity", position="dodge", color='skyblue',fill='darkred') + 
+  # scale_y_continuous(limits = c(0.5,0.07))+
+  coord_flip()+ 
+  xlab("State") +  ylab("ABV") + ggtitle("Median ABV by State") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+
+beerBrew %>% filter(!is.na(IBU)) %>%
+  group_by(State) %>%
+  summarise(IBU=median(IBU)) %>%
+  ggplot(aes(x=reorder(State,-IBU),IBU)) +
+  geom_bar(stat="identity", position="dodge", color='skyblue',fill='darkred') + 
+  coord_flip()+ 
+  xlab("State") +  ylab("IBU") + ggtitle("Median IBU by State") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+```
+#5. (part 1) Which state has the maximum alcoholic (ABV) beer? 
+#Which state has the most bitter (IBU) beer?
+```{r}
+#find the single most ABV beer
+beerBrew %>% filter(!is.na(ABV)) %>% mutate(maxABV=max(ABV)) %>%
+  filter(ABV==maxABV) %>% select(State, Name.x, Name.y, ABV)
+
+beerBrew %>% filter(!is.na(ABV)) %>% mutate(minABV=min(ABV)) %>%
+  filter(ABV==minABV) %>% select(State, Name.x, Name.y, ABV)
+
+beerBrew %>% filter(!is.na(IBU)) %>% mutate(maxABV=max(IBU)) %>%
+  filter(IBU==maxABV) %>% select(State, Name.x, Name.y, IBU)
+
+beerBrew %>% filter(!is.na(IBU)) %>% mutate(minIBU = min(IBU)) %>%
+  filter(IBU==minIBU) %>% select(State, Name.x, Name.y, IBU)
+
+
+#find the single most bitter beer
+beerBrew %>% filter(!is.na(IBU)) %>% mutate(maxIBU=max(IBU)) %>%
+  filter(IBU==maxIBU)%>%select(State,Name.x,Name.y,IBU)
+
+```
+#6.Comment on the summary statistics and distribution of the ABV variable
+#The ABV is mostly normally distributed with a noticeable right tail.  
+#The mean is Larger than the median.
+```{r}
+ggplot(data=beerBrew, aes(x = State, y = ABV)) +
+  geom_boxplot(col = "red", fill="pink") + coord_flip() +
+  geom_jitter(position=position_jitter(0.05),col="blue") +
+  theme_bw(base_size = 14) +
+  xlab("State") +  ylab("ABV") + ggtitle("ABV Stats by State") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+ggplot(data=beerBrew, aes(x = State, y = IBU)) +
+  geom_boxplot(col = "red", fill="pink") + coord_flip() +
+  geom_jitter(position=position_jitter(0.05),col="blue") +
+  theme_bw(base_size = 14) +
+  xlab("State") +  ylab("IBU") + ggtitle("IBU Stats by State") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+
+
+#Check for normality of ABV using qq plot and histogram
+#on ppt
+beerBrew %>% filter(!is.na(ABV)) %>% select(ABV)%>%summary()
+
+gridExtra::grid.arrange(
+beerBrew %>% filter(!is.na(ABV)& ABV > .001) %>% ggplot(aes(x=ABV))+ 
+  geom_histogram(aes(y=..density..), colour="black", fill="blue")+
+  geom_density(alpha=.5, fill="#FF6666") + 
+  geom_vline(aes(xintercept=mean(ABV)),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=median(ABV)),
+             color="black", linetype="dashed", size=1) +
+  labs(y = "Density") + labs(x = "ABV") +
+  ggtitle("Checking Normaily of ABV", subtitle = "Black line = Median and Red line = Mean") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue")),
+
+
+beerBrew %>% filter(!is.na(ABV) & ABV > .001) %>% ggplot(aes(x=log(ABV)))+ 
+  geom_histogram(aes(y=..density..), colour="black", fill="blue")+
+  geom_density(alpha=.5, fill="#FF6666") + 
+  geom_vline(aes(xintercept=mean(log(ABV))),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=median(log(ABV))),
+             color="black", linetype="dashed", size=1) +
+    labs(y = "Density") + labs(x = "ABV") +
+  ggtitle("Checking Normaily of Log ABV", subtitle = "Black line = Median and Red line = Mean") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue")),
+nrow  = 1
+)
+
+gridExtra::grid.arrange(
+beerBrew %>% filter(!is.na(ABV) & ABV > .001) %>% ggplot(aes(sample=ABV)) +stat_qq() + stat_qq_line(color = "red") + ggtitle("QQ Plot of ABV")+ 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue")),
+beerBrew %>% filter(!is.na(ABV) & ABV > .001) %>% ggplot(aes(sample=log(ABV))) + stat_qq() + stat_qq_line(color = "red") + ggtitle("QQ Plot of Log ABV")+ 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue")),
+nrow  = 1
+)
+```
+#7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+#There is a moderate positive correlation between ABV and IBU.  
+#The upward slope is evidence of a positive relationship.  The points' moderate to small deviations from the trendline is clear evidence of a moderate to weak relationship.
+```{r}
+#Categorize the many styles into 7 groups
+beerBrew$StyleCat= case_when(
+  grepl( "Ale",beerBrew$Name.x) ~ "Ale",
+  grepl("(India Pale Ale|IPA)",beerBrew$Name.x) ~ "IPA",
+  grepl("Lager",beerBrew$Name.x)~"Lager",
+  grepl("Stout",beerBrew$Name.x)~"Stout",
+  grepl("Porter",beerBrew$Name.x)~"Porter",
+  grepl("Cider",beerBrew$Name.x)~"Cider",
+  grepl("Pilsner",beerBrew$Name.x)~"Pilsner",
+  TRUE~"Other"
+)
+
+
+beerBrew$StyleCat2 =   case_when(
+  grepl( "Ale",beerBrew$Style) ~ "Ale",
+  grepl("(India Pale Ale|IPA)",beerBrew$Style) ~ "IPA",
+  grepl("Lager",beerBrew$Style)~"Lager",
+  grepl("Stout",beerBrew$Style)~"Stout",
+  grepl("Porter",beerBrew$Style)~"Porter",
+  grepl("Cider",beerBrew$Style)~"Cider",
+  grepl("Pilsner",beerBrew$Style)~"Pilsner",
+  TRUE~"Other"
+)
+
+beerBrew$StyleCat3 =   case_when(beerBrew$StyleCat == "Other" ~ beerBrew$StyleCat2, TRUE ~ beerBrew$StyleCat)
+
+beerBrew %>% filter(!is.na(ABV)&!is.na(IBU))%>%
+  ggplot(aes(ABV,IBU,color=StyleCat3))+
+  geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +
+  labs(title="Correlation Between ABV and IBU") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+  
+
+beerBrew %>% filter(!is.na(ABV)&!is.na(IBU))%>%
+  ggplot(aes(ABV,IBU,color=StyleCat3))+
+  geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +
+  facet_wrap(~StyleCat3) +
+  labs(title="Correlation Between ABV and IBU", subtitle = "Broken out by Beer Style") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+```
+#8.1 Group beer styles into larger style buckets
+#Categorize the many styles into 5 groups
+```{r transform data beers.csv}
+beers2 <- beers
+colnames(beers2)
+names(beers2) <- c("beername", "beerID", "beerABV", "beerIBU", "beer.brewery.id", "beerstyle", "beerOunce")
+head(beers2)
+
+```
+
+```{r transform data breweries.csv}
+brew2 <- breweries
+colnames(brew2)
+names(brew2) <- c("brewery.id", "brewery.name", "brewery.city", "brewery.state.abb")
+
+brew2 <- brew2 %>%
+  mutate(brewery.state.abb = trimws(brewery.state.abb))
+
+head(brew2)
+
+```
+
+#Insert State name and region
+
+```{r Add state abb,name,region}
+#makes a data frame with State abbreviation, name  and region
+stateinf= data.frame(state.abb, state.name, state.region, state.x77, stringsAsFactors=FALSE) 
+head(stateinf[1:5])
+
+
+```
+#Merge data brew2 with data stateinf and calculate breweries numbers are present in each state
+
+```{r brewery count}
+
+brewstate<- merge(brew2, stateinf[1:5], by.x = "brewery.state.abb", by.y = "state.abb", all.x = TRUE)
+
+head(brewstate)
+
+
+```
+
+
+```{r merge data beers and breweries}
+
+beermerged <- merge(beers2, brewstate, by.x = "beer.brewery.id", by.y = "brewery.id")
+
+```
+
+
+```{r add column beeripaale into the combined beer form}
+
+beermerged$beeripaale<- ''
+
+head(beermerged)
+
+```
+
+
+```{r Get all different beers styles numbers}
+#Get all different beers styles' numbers
+beermerged %>%count(beerstyle)
+```
+
+
+```{r missing value}
+#filter missing value
+beermerged %>%
+  filter(beerstyle == '')
+
+```
+
+
+```{r IPA beers}
+
+beermerged %>%
+  filter(beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  count(beerstyle)
+
+beeripa <- beermerged %>%
+  filter(beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  mutate(beeripaale= 'IPA')
+
+
+head(beeripa)
+```
+
+
+
+```{r other Ale beer}
+
+# Kilt Lifter Scottish-Style Ale (1635)
+beermerged[946,]
+
+beermerged %>%
+  filter(!beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  filter(str_detect(beerstyle, "Ale") |  beerID==1635) %>%
+  count(beerstyle)
+
+beerale <- beermerged %>%
+  filter(!beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  filter(str_detect(beerstyle, "Ale") |beerID==1635) %>%
+  mutate(beeripaale= 'Ale')
+
+head(beerale)
+
+```
+
+
+```{r boundry words}
+
+head(beermerged) %>%
+  mutate(beer.style.words = as.character(str_split(beerstyle, boundary("word")))) %>%
+  select(beer.style.words)
+
+
+```
+
+```{r regex}
+
+# India Pale Ale
+IPA <- c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")
+
+
+```
+
+
+
+```{r combine beer IPA and Ale}
+
+total_beers_count <- dim(beermerged)[1]
+ipa_count <- dim(beeripa)[1]
+ale_count <- dim(beerale)[1]
+
+beercombined_ale <- rbind(beeripa, beerale)
+
+ipa_ale_count <- dim(beercombined_ale)[1]
+
+
+head(beercombined_ale)
+
+```
+
+
+```{r Boxplot of ABU between IPA and other Ale}
+
+beercombined_ale %>% 
+  filter(!is.na(beerABV)) %>%
+  ggplot(aes(x =beeripaale, y =beerABV, fill = beeripaale)) + 
+  geom_boxplot() + 
+  ggtitle("Boxplot of ABU between IPA and other Ale") + 
+  xlab("Style") + 
+  ylab("ABV")
+
+```
+  
+ 
+ 
+```{r Boxplot of IBU between IPA and other Ale}
+
+beercombined_ale %>% 
+  filter(!is.na(beerIBU)) %>%
+  ggplot(aes(x = beeripaale, y =beerIBU, fill = beeripaale)) + 
+  geom_boxplot() + 
+  ggtitle("Boxplot of IBU between IPA and other Ale") + 
+  xlab("Style") + 
+  ylab("IBU")
+
+```
+```{r}
+beerclassify <- beercombined_ale %>% 
+  filter(!is.na(beerABV) & !is.na(beerIBU) & !is.na(Population) & !is.na(Income))
+
+beerclassify %>%
+  group_by(beeripaale) %>%
+  summarise(beers.abv.median = median(beerABV), beers.ibu.median = median(beerIBU), count = n())
+
+
+beerclassify %>% 
+  ggplot(aes(x = beerABV, y = beerIBU, color =  beeripaale)) + 
+  xlab("ABV") + ylab("IBU") + 
+  geom_point()
+```
+ 
+```{r}
+library(class)
+library(caret)
+library(e1071)
+library(purrr)
+
+#use KNN classification to investigate the beer type with respect to IBV and ABU between IPA and ALE
+set.seed(300)
+split.perc = .70
+
+train.indices = sample(1:dim(beerclassify)[1],round(split.perc * dim(beerclassify)[1]))
+
+train = beerclassify[train.indices,]
+test = beerclassify[-train.indices,]
+
+dim(beerclassify) 
+dim(train) 
+dim(test)
+#use IBV and ABU variables to get beerIPAale type accuracy
+classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = 10)
+confusionMatrix(table(test$beeripaale,classifications))
+
+# use ABV and Income two variables to check beerIPAale type accuracy,then compare it with the above original one
+classifications = knn(train[,c(5,14)],test[,c(5,14)], train$beeripaale, prob = TRUE, k = 17)
+confusionMatrix(table(test$beeripaale,classifications))
+
+
+```
+
+
+## Loop for many k and one training / test partition
+```{r}
+acc = data.frame(accuracy = numeric(30), k = numeric(30))
+
+for(i in 1:30)
+{
+  classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = i)
+  table(test$beeripaale, classifications)
+  CM = confusionMatrix(table(test$beeripaale,classifications))
+  acc$accuracy[i] = CM$overall[1]
+  acc$k[i] = i
+}
+
+plot(acc$k,acc$accuracy, type = "l", main = "Investigation of beer type with IBU&ABV",xlab = "K Value", ylab="Accuracy")
+
+```
+## Loop for many k and many training / test partitions
+```{r}
+
+set.seed(100)
+iterations = 100
+numks = 25
+
+
+masterAcc = matrix(nrow = iterations, ncol = numks)
+
+for(j in 1:iterations)
+{
+  train.indices = sample(1:dim(beerclassify)[1],round(split.perc * dim(beerclassify)[1]))
+  train = beerclassify[train.indices,]
+  test = beerclassify[-train.indices,]
+  for(i in 1:numks)
+  {
+    classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = i)
+    table(test$beeripaale, classifications)
+    CM = confusionMatrix(table(test$beeripaale,classifications))
+    masterAcc[j,i] = CM$overall[1]
+  }
+  
+}
+
+MeanAcc = colMeans(masterAcc)
+
+plot(seq(1,numks,1),MeanAcc, type = "l",main = "Investigation of beer type with IBU&ABV",xlab = "K value",ylab="Beer type accuracy")
+
+which.max(MeanAcc)
+max(MeanAcc)
+
+
+```
+```{r  check correlation within IBU,ABV,Income, population,Ounce}
+#check multicorrelation within IBU,ABV,Income, population, ounce
+library(tidyverse)
+library(corrplot)
+library(RColorBrewer)
+library(ggplot2)
+library(GGally)
+
+#Replace missing value with mean
+beermerged1<- beermerged
+beermerged1$beerABV[which(is.na(beermerged1$beerABV))] <- mean(beermerged1$beerABV,na.rm=TRUE)
+beermerged1$beerIBU[which(is.na(beermerged1$beerIBU))] <- mean(beermerged1$beerIBU,na.rm=TRUE)
+
+
+filterbeermerged <-beermerged1 %>% select(beerIBU,beerABV, beerOunce,Income, Population) 
+
+ggpairs(filterbeermerged, title="correlogram with ggpairs()") 
+corrplot(cor(filterbeermerged), type="upper", order="original")
+
+```
+#9 Knock their socks off!  Find one other useful inference from 
+#the data that you feel Budweiser may be able to find value in.
+
+```{r}
+###Get population
+
+
+#go get Key from USCensus
+US_Census_KEY = "3094ca397d1d50a4e3a230346dbaf7d801f753d4" #get from US Census website
+
+#Pull Json data
+Json <- "https://api.census.gov/data/2018/acs/acs1?get=NAME,B01001_001E&for=state:*"
+
+
+#put in Dataframe
+get_json <- jsonlite::fromJSON(Json, flatten = TRUE)
+str(get_json)
+Pop_df <- as.data.frame(get_json)
+str(Pop_df)
+colnames(Pop_df)
+head(Pop_df)
+
+#clean up by renaming columns and dropping unneeded columns/rows
+names(Pop_df)[1] <- "State"
+names(Pop_df)[2] <- "Population"
+head(Pop_df)
+
+#clean up by dropping unneeded columns/rows
+Pop_df <- select(Pop_df, -3)
+Pop_df <- Pop_df[-c(1),]
+
+#change factor to numeric
+Pop_df$Population <- as.numeric(as.character(Pop_df$Population))
+
+view(Pop_df)
+head(Pop_df)
+summary(Pop_df)
+```
+
+```{r}
+#take a look at data
+Pop_df[order(Pop_df$Population),]
+
+#graph Population
+#in ppt
+library(scales)
+Pop_df  %>% 
+  ggplot(aes(x = reorder(State, -Population), y = Population)) +
+  geom_bar(stat = "identity", fill = "darkred") + 
+  #theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6)) +
+  labs(title = "2018 US Population by State",
+       subtitle = "Source:  US Census API") + 
+  xlab("State") + coord_flip() + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+
+
+```
+
+```{r}
+#pull out abbr from Coordinates map
+StateNames <- stateCoords %>% select(abbr, full) %>% distinct(abbr, full)
+
+#get style count by State
+StyleCnt <- beerBrew %>% mutate(State=gsub(" ","",State)) %>%
+  select(State, StyleCat3) %>% 
+  filter(!is.na(StyleCat3)) %>% group_by(State, StyleCat3) %>% tally( name = "Count")
+
+#add Abbr to State Names
+StatePop = merge(StateNames,Pop_df,by.x="full",by.y="State")
+
+#Merge Population and Beer Data
+Revenue_DF = merge(StatePop,StatebeerBrew,by.x="abbr",by.y="state")
+str(Revenue_DF)
+Revenue_DF[order(Revenue_DF$Beers/log(Revenue_DF$Population)),]
+
+
+
+#add metrics
+Revenue_DF = Revenue_DF %>% mutate(LogPop = log(Population),
+                                   brewsPerLogPop = Beers/log(Population),
+                                   beersPerLogPop = Beers/log(Population))
+
+colnames(Revenue_DF)[1] <- "state"
+#put in DataFrame for table
+
+Revenue_DF[order(Revenue_DF$beersPerLogPop),] 
+
+#put in map
+plot_usmap(data=Revenue_DF,values="beersPerLogPop",labels = TRUE, offset=0.5, color = "red")  +
+  scale_fill_continuous(type = "viridis", name="Beers per capita") + 
+  theme(legend.position = "right") +
+  labs(title = "Beer Density",
+       subtitle = "Darker Areas have the Fewest Beers per capita") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+```
+
+```{r}
+#Regression Line
+#Look at data points with high residual error
+#in ppt
+Revenue_DF %>% filter(beersPerLogPop < 7.5) %>% 
+  ggplot(aes(LogPop,beersPerLogPop)) +
+  geom_point(position=position_jitter(width=0.01),alpha=0.5)+
+  geom_smooth(method="lm",se=FALSE,size=2) +
+  labs(title="Correlation between Population and Count of Beers") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))+
+  labs(y = "Beers per Log of US Population") + labs(x = "Log of US Population")
+
+
+
+#get low values as areas to focus
+#in ppt
+TargetStates <- Revenue_DF %>% filter(beersPerLogPop <= 2,
+  LogPop > 15) %>% 
+  select(State = full, Population, BeerFactor = beersPerLogPop)
+                
+view(TargetStates)
+
+
+
+```
+
+```{r}
+#which kind of beer to sell
+StyleCnt$StyleCat3 <- as.factor(StyleCnt$StyleCat3)
+StyleCnt$State <- as.factor(StyleCnt$State)
+
+#str(StyleCnt)
+
+
+StyleTotals <- StyleCnt %>% group_by(StyleCat3) %>% summarise(Total = sum(Count))
+
+StyleTotals$BeerFactor <- StyleTotals$Total/sum(Revenue_DF$LogPop)
+
+
+TargetStates_LogPop <- Revenue_DF %>% filter(State == "AR" | State == "MS" |State == "AL" | 
+                                           State == "GA" |State == "SC" | State == "TN" ) %>%
+                      select(LogPop) %>%  sum(Revenue_DF$LogPop)
+str(TargetStates_LogPop)
+
+
+#get style count by State
+TargetStates_StyleCnt <- beerBrew %>% filter(State == "AR" | State == "MS" |State == "AL" | 
+                                               State == "GA" |State == "SC" | State == "TN" ) %>%
+  mutate(State=gsub(" ","",State)) %>%
+  select(State, StyleCat3) %>% 
+  filter(!is.na(StyleCat3)) %>% group_by(StyleCat3) %>% tally( name = "Totals")
+
+
+TargetStates_StyleCnt$BeerFactor <- TargetStates_StyleCnt$Totals/TargetStates_LogPop
+
+
+
+#Show Which Beers to Sell
+#in ppt
+gridExtra::grid.arrange(
+
+StyleTotals %>% ggplot(aes(StyleCat3,BeerFactor)) + 
+  geom_point(shape = 21, colour = "black", fill = "red", size = 5, stroke = 5)+
+  labs(title="Plotting Beer Factor by Style Accross the US") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))+
+  labs(y = "Beer Factor") + labs(x = "Beer Style"),
+
+TargetStates_StyleCnt %>% ggplot(aes(StyleCat3,BeerFactor)) + 
+  geom_point(shape = 21, colour = "black", fill = "red", size = 5, stroke = 5)+
+  labs(title="Plotting Beer Factor by Style in Target States") + 
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))+
+  labs(y = "Beer Factor") + labs(x = "Beer Style"),
+
+nrow  = 1
+)
+```
