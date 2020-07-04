@@ -29,7 +29,7 @@ Youtube video link:
 
 ## Analysis Files
 
-* [DataDynamos_BeerProject.Rmd - A markdown file with detailed analysis]-(https://github.com/sophiawu1006/DDSProject1/blob/master/DataDynamos_BeerProject.Rmd)
+* [DataDynamos_BeerProject.Rmd](https://github.com/sophiawu1006/DDSProject1/blob/master/DataDynamos_BeerProject.Rmd) - - A markdown file with detailed analysis
 
 ## Presentations
 
