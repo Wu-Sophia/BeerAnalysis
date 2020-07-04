@@ -189,7 +189,21 @@ beercombined_ale %>%
 library(class)
 library(caret)
 library(e1071)
+#create a beerclassify data with beercombined_ale form
 
+beerclassify <- beercombined_ale %>% 
+  filter(!is.na(beerABV) & !is.na(beerIBU))
+
+beerclassify %>%
+  group_by(beeripaale) %>%
+  summarize(beers.abv.median = median(beerABV), beers.ibu.median = median(beerIBU), count = n())
+
+
+beerclassify %>% 
+  ggplot(aes(x = beerABV, y = beerIBU, color =  beeripaale)) + 
+  xlab("ABV") + ylab("IBU") + 
+  geom_point()
+  
 #use KNN classification to investigate the difference with respect to IBV and ABU between IPA and ALE
 set.seed(300)
 split.perc = .70
