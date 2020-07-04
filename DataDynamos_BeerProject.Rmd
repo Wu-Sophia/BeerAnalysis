@@ -37,6 +37,8 @@ beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sc
 40
 ```
 #2. Merge Beer Data with Brewery  Data
+##  The data was obtained in two parts, the beer data and the brewery data. Both files were merged to obtain a common
+##  data for which analysis was carried out to address the needs of Budweiser.
 ```{r}
 beerBrew=merge(beers,breweries,by.x="Brewery_id",by.y="Brew_ID")
 beerBrew$Brewery_id = as.factor(beerBrew$Brewery_id)
