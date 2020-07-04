@@ -24,7 +24,8 @@ Github link:https://github.com/sophiawu1006/DDSProject1
 The purpose of this project is to provide Budweiser with actionable intelligence on where to sell new products and what products to sell. These conclusions were reached by utilizing the data provided by Budweiser executives. The approach we used was to identify certain characteristics within the beer market data and then comparing those findings to the country as a whole to identify pockets of untapped opportunity. The code below is used to extract and draw conclusions from the available data.
 
 Case study of US beers and breweries.
-*[Case Study 01.docx](https://github.com/sophiawu1006/DDSProject1/blob/master/Case%20Study%2001.docx):describes the project questions
+
+* [Case Study 01.docx](https://github.com/sophiawu1006/DDSProject1/blob/master/Case%20Study%2001.docx):describes the project questions
 
 ## YouTube Video
 
