@@ -11,7 +11,7 @@ This code book provides information about the data set and environment setup.
 
 The data was provided by our professor for the purposes of this beer project.
 
-## R Session Info
+## R environment
 
 Provides session output from the environment used during the execution of our project.
 
@@ -25,7 +25,7 @@ locale:
 [1] LC_COLLATE=English_United States.1252  LC_CTYPE=English_United States.1252    LC_MONETARY=English_United States.1252 LC_NUMERIC=C                          
 [5] LC_TIME=English_United States.1252    
 
-attached library packages:
+Attached library packages:
 library(caret)
 library(class)
 library(dplyr)
