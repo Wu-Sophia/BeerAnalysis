@@ -5,7 +5,7 @@ date: "7/4/2020"
 output: html_document
 ---
 ```{r}
-#Load Libraries and Data 
+#Load Libraries and Data
 library(caret)
 library(class)
 library(dplyr)
@@ -27,12 +27,14 @@ library(usmap)
 
 ##1. Number of Breweries Per State
 #merged Data first
+## The number of breweries pr state ranges between 1 and 40 with an exceptional case of 47 in Colordo.
+## As seen from the map, the number increases with increase in the darckness of the color associated with each state.
 ```{r}
 #breweries <- read.csv("Breweries.csv")
 #beer<- read.csv("Beers.csv")
 breweries = read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Breweries.csv")
 beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Beers.csv")
-
+40
 ```
 #2. Merge Beer Data with Brewery  Data
 ```{r}
