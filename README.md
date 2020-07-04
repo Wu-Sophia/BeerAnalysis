@@ -34,7 +34,7 @@ Youtube video link:
 ## Presentations
 
 * [DataDynamos_BeerMarketingPresentation.pptx (Power Point)](https://github.com/sophiawu1006/DDSProject1/blob/master/DataDynamos_BeerMarketingPresentation.pptx)
-* [DataDynamos_BeerMarketingPresentation.html (HTML)] (https://github.com/sophiawu1006/DDSProject1/blob/master/DataDynamo%20Beer%20Marketing%20Project.html)
+* [DataDynamos_BeerMarketingPresentation.html (HTML)](https://rpubs.com/chadreo/635495)
 
 ## Data
 
