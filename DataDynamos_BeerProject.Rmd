@@ -30,14 +30,14 @@ library(usmap)
 
 ##1. Number of Breweries Per State
 #merged Data first
-## The number of breweries pr state ranges between 1 and 40 with an exceptional case of 47 in Colordo.  
+## The number of breweries per state ranges from 1 to 47 with Colordo having the highest number.  
 ## As seen from the map, the number increases with increase in the darckness of the color associated with each state.  
 ```{r}
 #breweries <- read.csv("Breweries.csv")
 #beer<- read.csv("Beers.csv")
 breweries = read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Breweries.csv")
 beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sci/Unit8/Beers.csv")
-40
+
 ```
 #2. Merge Beer Data with Brewery  Data
 ##  The data was obtained in two parts, the beer data and the brewery data. Both files were merged to obtain a common  
@@ -46,6 +46,9 @@ beers<- read.csv("C:/Users/chadr/OneDrive/Documents/MS_DS_SMU/6306 Doing Data Sc
 beerBrew=merge(beers,breweries,by.x="Brewery_id",by.y="Brew_ID")
 beerBrew$Brewery_id = as.factor(beerBrew$Brewery_id)
 beerBrew$Beer_ID = as.factor(beerBrew$Beer_ID)
+
+head(beerBrew, 6)
+tail(beerBrew,6)
 
 #add in map data
 #add in map data
@@ -92,12 +95,11 @@ plot_usmap(data=map_view_df,values="Count",labels = TRUE, offset=0.5, color = "r
   theme(panel.background = element_rect(color = "black", fill = "lightblue"))
 
 ```
-#3. Address the missing values in each column.  
-## Due to the amount of data obtained, a percentage was selected for the analysis.  
-## The data also as missing information probably as a result of a lack in variety.  
+3. Address the missing values in each column.  
+The data set is missing information from three of the fields.
+IBU is missing 1,005 data points, ABV is missing 62 data points, and Style is missing 5 data points.
+
 ```{r}
-#3. Address the missing values in each column.
-# plot missing values in each column, rename some columns
 #on ppt
 gg_miss_var(beerBrew)
 gg_miss_var(beerBrew %>% select(IBU,ABV, State), State)
@@ -108,13 +110,15 @@ ggplot(beerBrew,
            y = ABV)) +
   geom_miss_point() + labs(title = "Plot of Values") + theme_light()
 
-# convert empty string Styles to NAs to more easily see missings in all columns
+# convert empty string Styles to NAs to more easily see missings data in all columns
 beerBrew$Style[which(beerBrew$Style=="")]=NA
 view(sapply(beerBrew, function(x) sum(is.na(x))))
 
 ```
-#4.Compute the median alcohol content and international bitterness unit for each state. 
-#Plot a bar chart to compare.
+4.Compute the median alcohol content and international bitterness unit for each state. 
+Plot a bar chart to compare.
+The median ABV for each state ranges between 4% and just over 6% while the IBU ranges between 20 and just over 60.
+
 ```{r}
 beerBrew %>% filter(!is.na(ABV)) %>%
  group_by(State) %>%
@@ -165,8 +169,7 @@ beerBrew %>% filter(!is.na(IBU)) %>% mutate(maxIBU=max(IBU)) %>%
 
 ```
 #6.Comment on the summary statistics and distribution of the ABV variable
-#The ABV is mostly normally distributed with a noticeable right tail.  
-#The mean is Larger than the median.
+#The ABV is mostly normally distributed although slightly skewed to the right as the mean is Larger than the median.
 ```{r}
 ggplot(data=beerBrew, aes(x = State, y = ABV)) +
   geom_boxplot(col = "red", fill="pink") + coord_flip() +
@@ -226,7 +229,7 @@ nrow  = 1
 ```
 #7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 #There is a moderate positive correlation between ABV and IBU.  
-#The upward slope is evidence of a positive relationship.  The points' moderate to small deviations from the trendline is clear evidence of a moderate to weak relationship.
+#The upward slope is evidence of a positive relationship, meaning as the ABV increases, so does the IBU.
 ```{r}
 #Categorize the many styles into 7 groups
 beerBrew$StyleCat= case_when(
@@ -562,11 +565,14 @@ corrplot(cor(filterbeermerged), type="upper", order="original")
 #9 Knock their socks off!  Find one other useful inference from 
 #the data that you feel Budweiser may be able to find value in.
 
+Using the beer market data and combining with US Census API data, we are able to create factors to compare each state to other states to find which states are underserved.  
+We then use this data to determine of the underserved states, what products should we sell to them.
 ```{r}
-###Get population
+
+###Get population from US Census website
 
 
-#go get Key from USCensus
+#go get Key from US Census
 US_Census_KEY = "3094ca397d1d50a4e3a230346dbaf7d801f753d4" #get from US Census website
 
 #Pull Json data
