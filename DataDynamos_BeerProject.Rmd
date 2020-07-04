@@ -137,8 +137,10 @@ beerBrew %>% filter(!is.na(IBU)) %>%
 ```
 #5. (part 1) Which state has the maximum alcoholic (ABV) beer? 
 #Which state has the most bitter (IBU) beer?
-## The state with the maximum ABV was found to be Colorado  
-## and that with the maximum IBU was found to be Oregon  
+## The state with the maximum ABV was found to be Colorado with 12.8% 
+##The state with the minimum ABV was found to be CA with 1% 
+## The state with the maximum IBU was found to be Oregon with 138  
+## The state with the minimum IBU was found to be CA with 4
 ```{r}
 #find the single most ABV beer
 beerBrew %>% filter(!is.na(ABV)) %>% mutate(maxABV=max(ABV)) %>%
