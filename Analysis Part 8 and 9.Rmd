@@ -1,0 +1,304 @@
+---
+title: "DDS Group beer Project"
+author: "Sophia Wu"
+date: "06/25/2020"
+output: html_document
+---
+
+# Data Analysis for questions 8 and 9
+
+```{r load data breweries.csv, beers.csv and import library }
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+breweries <- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Breweries.csv")
+beers<- read.csv("~/Documents/SMU/DS6306 Doing DS/CaseStudy1_2_2_2_2_2-2/Beers.csv")
+```
+
+```{r transform data beers.csv}
+beers2 <- beers
+colnames(beers2)
+names(beers2) <- c("beername", "beerID", "beerABV", "beerIBU", "beer.brewery.id", "beerstyle", "beerOunce")
+head(beers2)
+
+```
+
+```{r transform data breweries.csv}
+brew2 <- breweries
+colnames(brew2)
+names(brew2) <- c("brewery.id", "brewery.name", "brewery.city", "brewery.state.abb")
+
+brew2 <- brew2 %>%
+  mutate(brewery.state.abb = trimws(brewery.state.abb))
+
+head(brew2)
+
+```
+
+#Insert State name and region
+
+```{r Add state abb,name,region}
+#makes a data frame with State abbreviation, name  and region
+stateinf= data.frame(state.abb, state.name, state.region, state.x77, stringsAsFactors=FALSE) 
+head(stateinf[1:5])
+
+
+```
+#Merge data brew2 with data stateinf and calculate breweries numbers are present in each state
+
+```{r brewery count}
+
+brewstate<- merge(brew2, stateinf[1:5], by.x = "brewery.state.abb", by.y = "state.abb", all.x = TRUE)
+
+head(brewstate)
+
+
+```
+
+
+```{r merge data beers and breweries}
+
+beermerged <- merge(beers2, brewstate, by.x = "beer.brewery.id", by.y = "brewery.id")
+
+```
+
+
+```{r add column beeripaale into the combined beer form}
+
+beermerged$beeripaale<- ''
+
+head(beermerged)
+
+```
+
+
+```{r Get all different beers styles' numbers}
+#Get all different beers styles' numbers
+beermerged %>%count(beerstyle)
+```
+
+
+```{r missing value}
+#filter missing value
+beermerged %>%
+  filter(beerstyle == '')
+
+```
+
+
+```{r IPA beers}
+
+beermerged %>%
+  filter(beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  count(beerstyle)
+
+beeripa <- beermerged %>%
+  filter(beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  mutate(beeripaale= 'IPA')
+
+
+head(beeripa)
+```
+
+
+
+```{r other Ale beer}
+
+# Kilt Lifter Scottish-Style Ale (1635)
+beermerged[946,]
+
+beermerged %>%
+  filter(!beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  filter(str_detect(beerstyle, "Ale") |  beerID==1635) %>%
+  count(beerstyle)
+
+beerale <- beermerged %>%
+  filter(!beerstyle %in% c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")) %>%
+  filter(str_detect(beerstyle, "Ale") |beerID==1635) %>%
+  mutate(beeripaale= 'Ale')
+
+head(beerale)
+
+```
+
+
+```{r boundry words}
+
+head(beermerged) %>%
+  mutate(beer.style.words = as.character(str_split(beerstyle, boundary("word")))) %>%
+  select(beer.style.words)
+
+
+```
+
+```{r regex}
+
+# India Pale Ale
+IPA <- c("American Double / Imperial IPA", "American IPA", "Belgian IPA", "English India Pale Ale (IPA)")
+
+
+```
+
+
+
+```{r combine beer IPA and Ale}
+
+total_beers_count <- dim(beermerged)[1]
+ipa_count <- dim(beeripa)[1]
+ale_count <- dim(beerale)[1]
+
+beercombined_ale <- rbind(beeripa, beerale)
+
+ipa_ale_count <- dim(beercombined_ale)[1]
+
+
+head(beercombined_ale)
+
+```
+
+
+```{r Boxplot of ABU between IPA and other Ale}
+
+beercombined_ale %>% 
+  filter(!is.na(beerABV)) %>%
+  ggplot(aes(x =beeripaale, y =beerABV, fill = beeripaale)) + 
+  geom_boxplot() + 
+  ggtitle("Boxplot of ABU between IPA and other Ale") + 
+  xlab("Style") + 
+  ylab("ABV")
+
+```
+  
+ 
+ 
+```{r Boxplot of IBU between IPA and other Ale}
+
+beercombined_ale %>% 
+  filter(!is.na(beerIBU)) %>%
+  ggplot(aes(x = beeripaale, y =beerIBU, fill = beeripaale)) + 
+  geom_boxplot() + 
+  ggtitle("Boxplot of IBU between IPA and other Ale") + 
+  xlab("Style") + 
+  ylab("IBU")
+
+```
+```{r}
+beerclassify <- beercombined_ale %>% 
+  filter(!is.na(beerABV) & !is.na(beerIBU) & !is.na(Population) & !is.na(Income))
+
+beerclassify %>%
+  group_by(beeripaale) %>%
+  summarize(beers.abv.median = median(beerABV), beers.ibu.median = median(beerIBU), count = n())
+
+
+beerclassify %>% 
+  ggplot(aes(x = beerABV, y = beerIBU, color =  beeripaale)) + 
+  xlab("ABV") + ylab("IBU") + 
+  geom_point()
+```
+ 
+```{r}
+library(class)
+library(caret)
+library(e1071)
+library(purrr)
+
+#use KNN classification to investigate the beer type with respect to IBV and ABU between IPA and ALE
+set.seed(300)
+split.perc = .70
+
+train.indices = sample(1:dim(beerclassify)[1],round(split.perc * dim(beerclassify)[1]))
+
+train = beerclassify[train.indices,]
+test = beerclassify[-train.indices,]
+
+dim(beerclassify) 
+dim(train) 
+dim(test)
+#use IBV and ABU variables to get beerIPAale type accuracy
+classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = 10)
+confusionMatrix(table(test$beeripaale,classifications))
+
+# use ABV and Income two variables to check beerIPAale type accuracy,then compare it with the above original one
+classifications = knn(train[,c(5,14)],test[,c(5,14)], train$beeripaale, prob = TRUE, k = 17)
+confusionMatrix(table(test$beeripaale,classifications))
+
+
+```
+
+
+## Loop for many k and one training / test partition
+```{r}
+acc = data.frame(accuracy = numeric(30), k = numeric(30))
+
+for(i in 1:30)
+{
+  classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = i)
+  table(test$beeripaale, classifications)
+  CM = confusionMatrix(table(test$beeripaale,classifications))
+  acc$accuracy[i] = CM$overall[1]
+  acc$k[i] = i
+}
+
+plot(acc$k,acc$accuracy, type = "l", main = "Investigation of beer type with IBU&ABV",xlab = "K Value", ylab="Accuracy")
+
+```
+## Loop for many k and many training / test partitions
+```{r}
+
+set.seed(100)
+iterations = 100
+numks = 25
+
+
+masterAcc = matrix(nrow = iterations, ncol = numks)
+
+for(j in 1:iterations)
+{
+  train.indices = sample(1:dim(beerclassify)[1],round(split.perc * dim(beerclassify)[1]))
+  train = beerclassify[train.indices,]
+  test = beerclassify[-train.indices,]
+  for(i in 1:numks)
+  {
+    classifications = knn(train[,c(4,5)],test[,c(4,5)], train$beeripaale, prob = TRUE, k = i)
+    table(test$beeripaale, classifications)
+    CM = confusionMatrix(table(test$beeripaale,classifications))
+    masterAcc[j,i] = CM$overall[1]
+  }
+  
+}
+
+MeanAcc = colMeans(masterAcc)
+
+plot(seq(1,numks,1),MeanAcc, type = "l",main = "Investigation of beer type with IBU&ABV",xlab = "K value",ylab="Beer type accuracy")
+
+which.max(MeanAcc)
+max(MeanAcc)
+
+
+
+```
+```{r  check correlation within IBU,ABV,Income, population,Ounce}
+#check multicorrelation within IBU,ABV,Income, population, ounce
+library(tidyverse)
+library(corrplot)
+library(RColorBrewer)
+library(ggplot2)
+library(GGally)
+
+#Replace missing value with mean
+beermerged1<- beermerged
+beermerged1$beerABV[which(is.na(beermerged1$beerABV))] <- mean(beermerged1$beerABV,na.rm=TRUE)
+beermerged1$beerIBU[which(is.na(beermerged1$beerIBU))] <- mean(beermerged1$beerIBU,na.rm=TRUE)
+
+
+filterbeermerged <-beermerged1 %>% select(beerIBU,beerABV, beerOunce,Income, Population) 
+
+ggpairs(filterbeermerged, title="correlogram with ggpairs()") 
+corrplot(cor(filterbeermerged), type="upper", order="original")
+
+```
+
+
