@@ -27,6 +27,7 @@ Present the relationship between alcohol and bitterness.
 
 Youtube video link:  
 Chad Reo - https://youtu.be/6b-LynSUCz8
+
 Sophia Wu -https://youtu.be/D9YjgEwgHfs
 
 ## Analysis Files
